@@ -1,0 +1,9 @@
+package models
+
+type Student struct {
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Age    int    `json:"age"`
+	Course string `json:"course"`
+	Email  string `json:"email"`
+}
