@@ -17,10 +17,10 @@ func NewStudentService() *StudentService {
 		students: []models.Student{
 			{
 				ID:     1,
-				Name:   "Rahul",
+				Name:   "Raj",
 				Age:    20,
 				Course: "B.Com",
-				Email:  "rahul@example.com",
+				Email:  "raj@example.com",
 			},
 			{
 				ID:     2,
@@ -32,7 +32,7 @@ func NewStudentService() *StudentService {
 			{
 				ID:     3,
 				Name:   "Royal",
-				Age:    21,
+				Age:    65,
 				Course: "BBA",
 				Email:  "royal@example.com",
 			},
