@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jayashridesh/Student-pipeline-demo/handlers"
-	"github.com/jayashridesh/Student-pipeline-demo/services"
+	"github.com/ValorxAI/Student-pipeline-demo/handlers"
+	"github.com/ValorxAI/Student-pipeline-demo/services"
 )
 
 func main() {

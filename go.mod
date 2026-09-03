@@ -1,3 +1,3 @@
-module github.com/jayashridesh/Student-pipeline-demo
+module github.com/ValorxAI/Student-pipeline-demo
 
-go 1.22.5
+go 1.24
