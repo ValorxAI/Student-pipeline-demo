@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jayashridesh/student-api/models"
-	"github.com/jayashridesh/student-api/services"
+	"github.com/jayashridesh/Student-pipeline-demo/models"
+	"github.com/jayashridesh/Student-pipeline-demo/services"
 )
 
 type StudentHandler struct {

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/jayashridesh/student-api/handlers"
-	"github.com/jayashridesh/student-api/services"
+	"github.com/jayashridesh/Student-pipeline-demo/handlers"
+	"github.com/jayashridesh/Student-pipeline-demo/services"
 )
 
 func main() {

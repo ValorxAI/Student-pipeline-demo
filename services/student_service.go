@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/jayashridesh/student-api/models"
+	"github.com/jayashridesh/Student-pipeline-demo/models"
 )
 
 type StudentService struct {
