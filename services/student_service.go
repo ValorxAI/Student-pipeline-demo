@@ -36,6 +36,13 @@ func NewStudentService() *StudentService {
 				Course: "BE",
 				Email:  "royal@example.com",
 			},
+			{
+				ID:     4,
+				Name:   "Sima",
+				Age:    26,
+				Course: "LLB",
+				Email:  "sima@example.com",
+			},
 		},
 	}
 }
