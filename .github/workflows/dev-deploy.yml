@@ -1,0 +1,110 @@
+name: DEV - Build and Deploy
+
+on:
+  push:
+    branches:
+      - dev
+
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+
+  build-and-deploy:
+
+    runs-on: ubuntu-latest
+
+    environment: dev
+
+    steps:
+
+      # -----------------------------
+      # Checkout
+      # -----------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # -----------------------------
+      # Azure OIDC Login
+      # -----------------------------
+
+      - name: Azure Login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+
+      # -----------------------------
+      # Verify Azure
+      # -----------------------------
+
+      - name: Verify Azure
+        run: |
+          az account show
+
+
+      # -----------------------------
+      # Login to ACR
+      # -----------------------------
+
+      - name: Login to ACR
+        run: |
+          az acr login --name ${{ vars.ACR_NAME }}
+
+
+      # -----------------------------
+      # Build Docker Image
+      # -----------------------------
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t ${{ vars.ACR_LOGIN_SERVER }}/${{ vars.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ vars.ACR_LOGIN_SERVER }}/${{ vars.IMAGE_NAME }}:latest \
+            .
+
+
+      # -----------------------------
+      # Push Docker Image
+      # -----------------------------
+
+      - name: Push Docker Image
+        run: |
+          docker push \
+            ${{ vars.ACR_LOGIN_SERVER }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}
+
+          docker push \
+            ${{ vars.ACR_LOGIN_SERVER }}/${{ vars.IMAGE_NAME }}:latest
+
+
+      # -----------------------------
+      # Deploy to Azure Web App
+      # -----------------------------
+
+      - name: Deploy to Azure Web App
+        run: |
+          az webapp config container set \
+            --name ${{ vars.WEBAPP_NAME }} \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --container-image-name \
+              ${{ vars.ACR_LOGIN_SERVER }}/${{ vars.IMAGE_NAME }}:${{ github.sha }} \
+            --container-registry-url \
+              https://${{ vars.ACR_LOGIN_SERVER }}
+
+
+      # -----------------------------
+      # Restart
+      # -----------------------------
+
+      - name: Restart Web App
+        run: |
+          az webapp restart \
+            --name ${{ vars.WEBAPP_NAME }} \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }}
