@@ -86,5 +86,7 @@ func (h *StudentHandler) DeleteStudent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	println("Student deleted successfully")
+
 	w.WriteHeader(http.StatusNoContent)
 }
