@@ -14,7 +14,9 @@ env:
   ACR_NAME: valorxacrdev
   IMAGE_NAME: valorx-ms
   RESOURCE_GROUP: rg-valorx-dev
-  CONTAINER_APP_NAME: api-template-gateway-dev
+  CONTAINER_APP_NAME1: api-template-gateway-dev
+  CONTAINER_APP_NAME2: dataservice-dev
+  CONTAINER_APP_NAME3: master-dataservice-dev
 
 jobs:
   build-and-deploy:
@@ -55,9 +57,23 @@ jobs:
             ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       # 6. Update Container App
-      - name: Deploy Container App
+      - name: API Template Gateway
         run: |
           az containerapp update \
-            --name ${{ env.CONTAINER_APP_NAME }} \
+            --name ${{ env.CONTAINER_APP_NAME1 }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      
+      - name: Data Service
+        run: |
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME2 }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Master Data Service
+        run: |
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME3 }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
