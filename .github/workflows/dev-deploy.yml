@@ -204,17 +204,6 @@ jobs:
             --image ${{ needs.build-and-push.outputs.image }}
 
       # --------------------------------------------------------
-      # Deploy Data Service
-      # --------------------------------------------------------
-
-      - name: Deploy Data Service - Staging
-        run: |
-          az containerapp update \
-            --name ${{ env.STAGING_CONTAINER_APP_2 }} \
-            --resource-group ${{ env.STAGING_RESOURCE_GROUP }} \
-            --image ${{ needs.build-and-push.outputs.image }}
-
-      # --------------------------------------------------------
       # Deploy Master Data Service
       # --------------------------------------------------------
 
