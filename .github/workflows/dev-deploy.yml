@@ -42,7 +42,7 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    environment: development
+    environment: dev
 
     outputs:
       image_tag: ${{ steps.image.outputs.image_tag }}
@@ -117,7 +117,7 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    environment: development
+    environment: dev
 
     steps:
 
