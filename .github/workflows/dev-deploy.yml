@@ -12,37 +12,29 @@ permissions:
   id-token: write
 
 env:
-  # Azure / ACR
   ACR_NAME: valorxacrdev
   ACR_LOGIN_SERVER: valorxacrdev.azurecr.io
-  # Docker image
   IMAGE_NAME: valorx-ms
 
-  # Resource groups
   DEV_RESOURCE_GROUP: rg-valorx-dev
   STAGING_RESOURCE_GROUP: rg-valorx-staging
 
-  # Dev Container Apps
   DEV_CONTAINER_APP_1: api-template-gateway-dev
   DEV_CONTAINER_APP_2: dataservice-dev
   DEV_CONTAINER_APP_3: master-dataservice-dev
 
-  # Staging Container Apps
   STAGING_CONTAINER_APP_1: api-template-gateway-staging
   STAGING_CONTAINER_APP_2: dataservice-staging
   STAGING_CONTAINER_APP_3: master-dataservice-staging
 
 jobs:
 
-  # ============================================================
-  # 1. BUILD AND PUSH IMAGE
-  # ============================================================
-
+  # ==========================================================
+  # 1. Build and Push ONE Docker Image
+  # ==========================================================
   build-and-push:
     name: Build and Push Docker Image
-
     runs-on: ubuntu-latest
-
     environment: dev
 
     outputs:
@@ -54,10 +46,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # --------------------------------------------------------
-      # Azure Login using OIDC
-      # --------------------------------------------------------
-
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -65,59 +53,43 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # --------------------------------------------------------
-      # Login to Azure Container Registry
-      # --------------------------------------------------------
-
       - name: Login to ACR
         run: |
-          az acr login --name ${{ env.ACR_NAME }}
-
-      # --------------------------------------------------------
-      # Create unique image tag
-      # --------------------------------------------------------
+          az acr login --name "${{ env.ACR_NAME }}"
 
       - name: Set Image Tag
         id: image
+        shell: bash
         run: |
           IMAGE_TAG="${GITHUB_SHA::7}"
+          IMAGE="${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
 
-          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
-          echo "image=${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
 
-          echo "Image:"
-          echo "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:$IMAGE_TAG"
-
-      # --------------------------------------------------------
-      # Build Docker Image
-      # --------------------------------------------------------
+          echo "======================================"
+          echo "Docker Image:"
+          echo "${IMAGE}"
+          echo "======================================"
 
       - name: Build Docker Image
         run: |
           docker build \
-            -t ${{ steps.image.outputs.image }} \
+            -t "${{ steps.image.outputs.image }}" \
             .
-
-      # --------------------------------------------------------
-      # Push Docker Image to ACR
-      # --------------------------------------------------------
 
       - name: Push Docker Image
         run: |
-          docker push ${{ steps.image.outputs.image }}
+          docker push "${{ steps.image.outputs.image }}"
 
 
-  # ============================================================
-  # 2. DEPLOY TO DEVELOPMENT
-  # ============================================================
-
+  # ==========================================================
+  # 2. Deploy SAME Image to Development
+  # ==========================================================
   deploy-dev:
     name: Deploy to Development
-
     needs: build-and-push
-
     runs-on: ubuntu-latest
-
     environment: dev
 
     steps:
@@ -129,51 +101,44 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # --------------------------------------------------------
-      # Deploy API Template Gateway
-      # --------------------------------------------------------
+      - name: Display Image
+        run: |
+          echo "======================================"
+          echo "Deploying image to Development:"
+          echo "${{ needs.build-and-push.outputs.image }}"
+          echo "======================================"
 
       - name: Deploy API Template Gateway - Dev
         run: |
           az containerapp update \
-            --name ${{ env.DEV_CONTAINER_APP_1 }} \
-            --resource-group ${{ env.DEV_RESOURCE_GROUP }} \
-            --image ${{ needs.build-and-push.outputs.image }}
-
-      # --------------------------------------------------------
-      # Deploy Data Service
-      # --------------------------------------------------------
+            --name "${{ env.DEV_CONTAINER_APP_1 }}" \
+            --resource-group "${{ env.DEV_RESOURCE_GROUP }}" \
+            --image "${{ needs.build-and-push.outputs.image }}"
 
       - name: Deploy Data Service - Dev
         run: |
           az containerapp update \
-            --name ${{ env.DEV_CONTAINER_APP_2 }} \
-            --resource-group ${{ env.DEV_RESOURCE_GROUP }} \
-            --image ${{ needs.build-and-push.outputs.image }}
-
-      # --------------------------------------------------------
-      # Deploy Master Data Service
-      # --------------------------------------------------------
+            --name "${{ env.DEV_CONTAINER_APP_2 }}" \
+            --resource-group "${{ env.DEV_RESOURCE_GROUP }}" \
+            --image "${{ needs.build-and-push.outputs.image }}"
 
       - name: Deploy Master Data Service - Dev
         run: |
           az containerapp update \
-            --name ${{ env.DEV_CONTAINER_APP_3 }} \
-            --resource-group ${{ env.DEV_RESOURCE_GROUP }} \
-            --image ${{ needs.build-and-push.outputs.image }}
+            --name "${{ env.DEV_CONTAINER_APP_3 }}" \
+            --resource-group "${{ env.DEV_RESOURCE_GROUP }}" \
+            --image "${{ needs.build-and-push.outputs.image }}"
 
 
-  # ============================================================
-  # 3. STAGING DEPLOYMENT
-  #
-  # GitHub Environment "staging" should have REQUIRED REVIEWERS
-  # configured.
-  # ============================================================
-
+  # ==========================================================
+  # 3. Approval + Deploy SAME Image to Staging
+  # ==========================================================
   deploy-staging:
     name: Deploy to Staging
 
-    needs: deploy-dev
+    needs:
+      - build-and-push
+      - deploy-dev
 
     runs-on: ubuntu-latest
 
@@ -182,10 +147,6 @@ jobs:
 
     steps:
 
-      # --------------------------------------------------------
-      # Azure Login using OIDC
-      # --------------------------------------------------------
-
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -193,35 +154,30 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # --------------------------------------------------------
-      # Deploy API Template Gateway
-      # --------------------------------------------------------
+      - name: Display Image
+        run: |
+          echo "======================================"
+          echo "Deploying SAME image to Staging:"
+          echo "${{ needs.build-and-push.outputs.image }}"
+          echo "======================================"
 
       - name: Deploy API Template Gateway - Staging
         run: |
           az containerapp update \
-            --name ${{ env.STAGING_CONTAINER_APP_1 }} \
-            --resource-group ${{ env.STAGING_RESOURCE_GROUP }} \
-            --image ${{ needs.build-and-push.outputs.image }}
-
-      # --------------------------------------------------------
-      # Deploy Data Service
-      # --------------------------------------------------------
+            --name "${{ env.STAGING_CONTAINER_APP_1 }}" \
+            --resource-group "${{ env.STAGING_RESOURCE_GROUP }}" \
+            --image "${{ needs.build-and-push.outputs.image }}"
 
       - name: Deploy Data Service - Staging
         run: |
           az containerapp update \
-            --name ${{ env.STAGING_CONTAINER_APP_2 }} \
-            --resource-group ${{ env.STAGING_RESOURCE_GROUP }} \
-            --image ${{ needs.build-and-push.outputs.image }}
-
-      # --------------------------------------------------------
-      # Deploy Master Data Service
-      # --------------------------------------------------------
+            --name "${{ env.STAGING_CONTAINER_APP_2 }}" \
+            --resource-group "${{ env.STAGING_RESOURCE_GROUP }}" \
+            --image "${{ needs.build-and-push.outputs.image }}"
 
       - name: Deploy Master Data Service - Staging
         run: |
           az containerapp update \
-            --name ${{ env.STAGING_CONTAINER_APP_3 }} \
-            --resource-group ${{ env.STAGING_RESOURCE_GROUP }} \
-            --image ${{ needs.build-and-push.outputs.image }}
+            --name "${{ env.STAGING_CONTAINER_APP_3 }}" \
+            --resource-group "${{ env.STAGING_RESOURCE_GROUP }}" \
+            --image "${{ needs.build-and-push.outputs.image }}"
